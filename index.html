@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yönlendiriliyor...</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .btn {
+            background-color: #e50914; /* Netflix kırmızısı gibi */
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            display: inline-block;
+        }
+        p { font-size: 14px; color: #aaa; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>Sinoflix</h2>
+    <div id="status">Film tarayıcıda açılıyor...</div>
+    
+    <a id="redirect-btn" href="#" class="btn">İzle / Watch</a>
+    <p>Otomatik açılmazsa butona tıklayın.</p>
+
+    <script>
+        // 1. URL'in sonundaki "?v=" parametresini alıyoruz
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetUrl = urlParams.get('v');
+
+        if (!targetUrl) {
+            document.getElementById('status').innerText = "Hata: Link bulunamadı.";
+            document.getElementById('redirect-btn').style.display = 'none';
+        } else {
+            // Butonun linkini ayarla
+            document.getElementById('redirect-btn').href = targetUrl;
+
+            // KULLANICI CİHAZINI ALGILA
+            var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            
+            // --- ANDROID İÇİN (Intent ile Chrome'u zorla) ---
+            if (/android/i.test(userAgent)) {
+                // https:// kısmını temizle
+                var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
+                // Chrome Intent Linki
+                var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
+                
+                // Önce intent dene, olmazsa normal link
+                window.location.href = intentUrl;
+            }
+            
+            // --- IOS (iPhone) İÇİN ---
+            else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                // iOS'ta otomatik yönlendirme zordur, direkt adrese gitmeyi deneriz
+                window.location.href = targetUrl;
+            }
+            
+            // --- MASAÜSTÜ / DİĞER ---
+            else {
+                window.location.href = targetUrl;
+            }
+        }
+    </script>
+</body>
+</html>
