@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>İzlemek İçin Tıklayın</title>
+    <title>Yönlendiriliyor...</title>
     <style>
         body {
-            background-color: #000;
-            color: #fff;
-            font-family: sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -18,78 +18,67 @@
             text-align: center;
         }
         .btn {
-            display: block;
-            width: 80%;
-            padding: 20px;
-            margin: 10px 0;
+            background-color: #e50914;
+            color: white;
+            padding: 15px 30px;
             text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
+            border-radius: 5px;
             font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            display: inline-block;
         }
-        .btn-red {
-            background-color: #e50914; /* Netflix Kırmızısı */
-            color: white;
-            border: 2px solid #e50914;
-        }
-        .btn-gray {
-            background-color: #333;
-            color: white;
-            border: 1px solid #555;
-            font-size: 16px;
-        }
-        p { color: #aaa; margin-bottom: 20px; }
+        p { font-size: 14px; color: #aaa; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <h3>Sinoflix</h3>
-    <p>İzlemek için aşağıdaki butona basın:</p>
-
-    <a id="btn-chrome" href="#" class="btn btn-red">UYGULAMADA AÇ (Önerilen)</a>
-
-    <a id="btn-normal" href="#" class="btn btn-gray">Tarayıcıda Aç (Yedek)</a>
-
-    <div id="error-msg" style="color:red; font-size:12px; margin-top:20px;"></div>
+    <h2>Sinoflix</h2>
+    <div id="status">Film tarayıcıda açılıyor...</div>
+    
+    <a id="redirect-btn" href="#" class="btn">İzle / Watch</a>
+    <p>Otomatik açılmazsa butona tıklayın.</p>
 
     <script>
-        try {
-            // 1. URL PARÇALARINI BİRLEŞTİR
-            // Telegram bazen linki parçalar, biz birleştiriyoruz.
-            const params = new URLSearchParams(window.location.search);
-            let fullLink = params.get('v');
+        // 1. URL Parametrelerini al
+        const urlParams = new URLSearchParams(window.location.search);
+        let targetUrl = urlParams.get('v');
 
-            if (window.location.hash) {
-                fullLink += window.location.hash;
-            }
+        // Linkteki kopan parça (hash) varsa geri birleştir
+        if (targetUrl && window.location.hash) {
+            targetUrl += window.location.hash;
+        }
 
-            if (!fullLink) {
-                document.getElementById('error-msg').innerText = "Link hatalı veya eksik.";
-            } else {
-                // 2. LİNKLERİ HAZIRLA
+        if (!targetUrl) {
+            document.getElementById('status').innerText = "Hata: Link bulunamadı.";
+            document.getElementById('redirect-btn').style.display = 'none';
+        } else {
+            
+            var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            var isAndroid = /android/i.test(userAgent);
+
+            // --- ANDROID İÇİN "GOOGLECHROME" PROTOKOLÜ ---
+            if (isAndroid) {
+                // https:// kısmını 'googlechrome://' ile değiştiriyoruz.
+                // Bu yöntem '#' işaretini bozmaz, direkt taşır.
+                var androidUrl = targetUrl.replace(/^https?:\/\//, 'googlechrome://');
                 
-                // Normal Link (Yedek buton için)
-                document.getElementById('btn-normal').href = fullLink;
-
-                // Chrome Linki (Kırmızı buton için)
-                // Linkin başındaki https:// kısmını silip googlechrome:// yapıyoruz
-                let chromeLink = fullLink.replace(/^https?:\/\//, 'googlechrome://');
-                document.getElementById('btn-chrome').href = chromeLink;
-
-                // 3. BASİT OTOMATİK YÖNLENDİRME (Sadece Android ise)
-                var ua = navigator.userAgent || navigator.vendor || window.opera;
-                if (/android/i.test(ua)) {
-                     // Kullanıcı beklemesin diye 1 saniye sonra kırmızıyı tetikle
-                     setTimeout(function() {
-                        window.location.href = chromeLink;
-                     }, 1000);
-                }
+                // Butona da Android linkini verelim
+                document.getElementById('redirect-btn').href = androidUrl;
+                
+                // Yönlendir
+                window.location.href = androidUrl;
             }
-
-        } catch (err) {
-            document.getElementById('error-msg').innerText = "Hata: " + err.message;
+            
+            // --- IOS (iPhone) ve DİĞERLERİ ---
+            else {
+                // Butona normal linki ver
+                document.getElementById('redirect-btn').href = targetUrl;
+                
+                // Normal Yönlendirme
+                window.location.href = targetUrl;
+            }
         }
     </script>
-
 </body>
 </html>
