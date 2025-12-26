@@ -40,11 +40,11 @@
     <p>Otomatik açılmazsa butona tıklayın.</p>
 
     <script>
-        // 1. URL Parametrelerini ve Hash (Kare) kısmını birleştir
+        // 1. URL Parametrelerini al
         const urlParams = new URLSearchParams(window.location.search);
         let targetUrl = urlParams.get('v');
 
-        // Eğer link koptuysa (browser # işaretini ayırdıysa) geri birleştiriyoruz
+        // Linkteki kopan parça (hash) varsa geri birleştir
         if (targetUrl && window.location.hash) {
             targetUrl += window.location.hash;
         }
@@ -53,36 +53,29 @@
             document.getElementById('status').innerText = "Hata: Link bulunamadı.";
             document.getElementById('redirect-btn').style.display = 'none';
         } else {
-            // Butona her ihtimale karşı temiz linki ver
-            document.getElementById('redirect-btn').href = targetUrl;
-
-            var userAgent = navigator.userAgent || navigator.vendor || window.opera;
             
-            // --- ANDROID İÇİN KRİTİK DÜZELTME ---
-            if (/android/i.test(userAgent)) {
-                // Protokolü temizle (https:// kısmını at)
-                var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
-                
-                // !!! İŞTE ÇÖZÜM BURADA !!!
-                // Android Intent'i, linkteki '#' işaretini görünce linki keser.
-                // Bu yüzden linkin içindeki '#' işaretini '%23' ile değiştiriyoruz.
-                // Böylece Android linki kesemiyor.
-                cleanUrl = cleanUrl.replace('#', '%23');
+            var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            var isAndroid = /android/i.test(userAgent);
 
-                // Chrome Intent Linki Oluştur
-                var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
+            // --- ANDROID İÇİN "GOOGLECHROME" PROTOKOLÜ ---
+            if (isAndroid) {
+                // https:// kısmını 'googlechrome://' ile değiştiriyoruz.
+                // Bu yöntem '#' işaretini bozmaz, direkt taşır.
+                var androidUrl = targetUrl.replace(/^https?:\/\//, 'googlechrome://');
+                
+                // Butona da Android linkini verelim
+                document.getElementById('redirect-btn').href = androidUrl;
                 
                 // Yönlendir
-                window.location.href = intentUrl;
+                window.location.href = androidUrl;
             }
             
-            // --- IOS (iPhone) ---
-            else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-                window.location.href = targetUrl;
-            }
-            
-            // --- DİĞERLERİ ---
+            // --- IOS (iPhone) ve DİĞERLERİ ---
             else {
+                // Butona normal linki ver
+                document.getElementById('redirect-btn').href = targetUrl;
+                
+                // Normal Yönlendirme
                 window.location.href = targetUrl;
             }
         }
