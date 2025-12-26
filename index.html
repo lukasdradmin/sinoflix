@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yönlendiriliyor...</title>
+    <title>İzlemek İçin Tıklayın</title>
     <style>
         body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+            font-family: sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -16,115 +16,80 @@
             height: 100vh;
             margin: 0;
             text-align: center;
-            padding: 20px;
         }
         .btn {
-            background-color: #e50914;
-            color: white;
-            padding: 15px 30px;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 18px;
-            font-weight: bold;
-            margin-top: 20px;
-            display: inline-block;
+            display: block;
             width: 80%;
-            max-width: 300px;
+            padding: 20px;
+            margin: 10px 0;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 18px;
         }
-        .btn-secondary {
+        .btn-red {
+            background-color: #e50914; /* Netflix Kırmızısı */
+            color: white;
+            border: 2px solid #e50914;
+        }
+        .btn-gray {
             background-color: #333;
-            margin-top: 15px;
+            color: white;
+            border: 1px solid #555;
             font-size: 16px;
         }
-        p { font-size: 14px; color: #aaa; margin-top: 10px; }
-        .debug-url { font-size: 10px; color: #555; margin-top: 30px; word-break: break-all; }
+        p { color: #aaa; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-    <h2>Sinoflix</h2>
-    <div id="status">Film tarayıcıda açılıyor...</div>
-    
-    <a id="chrome-btn" href="#" class="btn">Chrome ile Aç</a>
+    <h3>Sinoflix</h3>
+    <p>İzlemek için aşağıdaki butona basın:</p>
 
-    <a id="generic-btn" href="#" class="btn btn-secondary" style="display:none;">Diğer Tarayıcılar</a>
+    <a id="btn-chrome" href="#" class="btn btn-red">UYGULAMADA AÇ (Önerilen)</a>
 
-    <p>Butonlara basmanıza rağmen açılmıyorsa linki kopyalayıp tarayıcınıza yapıştırın.</p>
-    
-    <div id="debug-area" class="debug-url">Link yükleniyor...</div>
+    <a id="btn-normal" href="#" class="btn btn-gray">Tarayıcıda Aç (Yedek)</a>
+
+    <div id="error-msg" style="color:red; font-size:12px; margin-top:20px;"></div>
 
     <script>
         try {
-            // URL Parametrelerini al
-            const urlParams = new URLSearchParams(window.location.search);
-            let targetUrl = urlParams.get('v');
+            // 1. URL PARÇALARINI BİRLEŞTİR
+            // Telegram bazen linki parçalar, biz birleştiriyoruz.
+            const params = new URLSearchParams(window.location.search);
+            let fullLink = params.get('v');
 
-            // Hash (Kare işareti) kopukluğunu tamir et
-            if (targetUrl && window.location.hash) {
-                targetUrl += window.location.hash;
+            if (window.location.hash) {
+                fullLink += window.location.hash;
             }
 
-            // Hata Kontrolü
-            if (!targetUrl) {
-                document.getElementById('status').innerText = "Hata: Link bulunamadı.";
-                document.getElementById('debug-area').innerText = "URL Parametresi (?v=) boş.";
-                document.getElementById('chrome-btn').style.display = 'none';
+            if (!fullLink) {
+                document.getElementById('error-msg').innerText = "Link hatalı veya eksik.";
             } else {
-                // Debug alanına linki yaz (Sorun olursa ekran görüntüsünde görelim)
-                document.getElementById('debug-area').innerText = "Hedef: " + targetUrl;
-
-                var userAgent = navigator.userAgent || navigator.vendor || window.opera;
-                var isAndroid = /android/i.test(userAgent);
-                var isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
-
-                // --- ANDROID İŞLEMLERİ ---
-                if (isAndroid) {
-                    // 1. Chrome Linki (googlechrome://)
-                    // Hash işaretini bozmamak için olduğu gibi bırakıyoruz, googlechrome şeması genelde bunu çözer.
-                    var chromeUrl = targetUrl.replace(/^https?:\/\//, 'googlechrome://');
-                    
-                    // 2. Genel Intent Linki (Yedek)
-                    // "https://" kısmını atıp saf domaini alıyoruz
-                    var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
-                    // Intent formatı: Linki ver, şeması https olsun, ama kullanıcı tarayıcı seçsin (package belirtmiyoruz)
-                    var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;action=android.intent.action.VIEW;end;";
-
-                    // Butonları Ayarla
-                    var btn1 = document.getElementById('chrome-btn');
-                    var btn2 = document.getElementById('generic-btn');
-
-                    btn1.href = chromeUrl;
-                    btn1.innerText = "Chrome İle İzle (Önerilen)";
-                    
-                    btn2.href = intentUrl;
-                    btn2.style.display = "inline-block"; // Gizli butonu aç
-                    btn2.innerText = "Diğer Tarayıcı / Açılmıyorsa Tıkla";
-
-                    // Otomatik Yönlendirme (Önce Chrome dener)
-                    setTimeout(function() {
-                        window.location.href = chromeUrl;
-                    }, 500);
-                }
+                // 2. LİNKLERİ HAZIRLA
                 
-                // --- IOS İŞLEMLERİ ---
-                else if (isIOS) {
-                    document.getElementById('chrome-btn').href = targetUrl;
-                    document.getElementById('chrome-btn').innerText = "İzle / Watch";
-                    // iOS'ta bazen otomatik gitmez, kullanıcı butona basar.
-                    window.location.href = targetUrl;
-                }
-                
-                // --- MASAÜSTÜ / DİĞER ---
-                else {
-                    document.getElementById('chrome-btn').href = targetUrl;
-                    window.location.href = targetUrl;
+                // Normal Link (Yedek buton için)
+                document.getElementById('btn-normal').href = fullLink;
+
+                // Chrome Linki (Kırmızı buton için)
+                // Linkin başındaki https:// kısmını silip googlechrome:// yapıyoruz
+                let chromeLink = fullLink.replace(/^https?:\/\//, 'googlechrome://');
+                document.getElementById('btn-chrome').href = chromeLink;
+
+                // 3. BASİT OTOMATİK YÖNLENDİRME (Sadece Android ise)
+                var ua = navigator.userAgent || navigator.vendor || window.opera;
+                if (/android/i.test(ua)) {
+                     // Kullanıcı beklemesin diye 1 saniye sonra kırmızıyı tetikle
+                     setTimeout(function() {
+                        window.location.href = chromeLink;
+                     }, 1000);
                 }
             }
-        } catch (e) {
-            // JavaScript çökerse hatayı ekrana bas
-            document.getElementById('status').innerText = "Bir hata oluştu.";
-            document.getElementById('debug-area').innerText = "JS Hatası: " + e.message;
+
+        } catch (err) {
+            document.getElementById('error-msg').innerText = "Hata: " + err.message;
         }
     </script>
+
 </body>
 </html>
