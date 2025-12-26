@@ -40,40 +40,48 @@
     <p>Otomatik açılmazsa butona tıklayın.</p>
 
     <script>
-        // --- DÜZELTME BURADA YAPILDI ---
-        // URL'den 'v' parametresini al
+        // 1. URL Parametrelerini ve Hash (Kare) kısmını birleştir
         const urlParams = new URLSearchParams(window.location.search);
         let targetUrl = urlParams.get('v');
 
-        // Eğer linkte '#' işareti varsa, tarayıcı bunu parametreden ayırır.
-        // Biz bunu tekrar elle birleştiriyoruz.
+        // Eğer link koptuysa (browser # işaretini ayırdıysa) geri birleştiriyoruz
         if (targetUrl && window.location.hash) {
             targetUrl += window.location.hash;
         }
-        // --------------------------------
 
         if (!targetUrl) {
             document.getElementById('status').innerText = "Hata: Link bulunamadı.";
             document.getElementById('redirect-btn').style.display = 'none';
         } else {
-            // Butona tam linki ver
+            // Butona her ihtimale karşı temiz linki ver
             document.getElementById('redirect-btn').href = targetUrl;
 
             var userAgent = navigator.userAgent || navigator.vendor || window.opera;
             
-            // --- ANDROID (Intent Düzeltmesi) ---
+            // --- ANDROID İÇİN KRİTİK DÜZELTME ---
             if (/android/i.test(userAgent)) {
-                // https:// kısmını temizle
+                // Protokolü temizle (https:// kısmını at)
                 var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
                 
-                // Intent oluştururken linkin tamamını veriyoruz
+                // !!! İŞTE ÇÖZÜM BURADA !!!
+                // Android Intent'i, linkteki '#' işaretini görünce linki keser.
+                // Bu yüzden linkin içindeki '#' işaretini '%23' ile değiştiriyoruz.
+                // Böylece Android linki kesemiyor.
+                cleanUrl = cleanUrl.replace('#', '%23');
+
+                // Chrome Intent Linki Oluştur
                 var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
                 
                 // Yönlendir
                 window.location.href = intentUrl;
             }
             
-            // --- IOS ve Diğerleri ---
+            // --- IOS (iPhone) ---
+            else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                window.location.href = targetUrl;
+            }
+            
+            // --- DİĞERLERİ ---
             else {
                 window.location.href = targetUrl;
             }
