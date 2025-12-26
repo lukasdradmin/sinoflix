@@ -16,6 +16,7 @@
             height: 100vh;
             margin: 0;
             text-align: center;
+            padding: 20px;
         }
         .btn {
             background-color: #e50914;
@@ -27,8 +28,16 @@
             font-weight: bold;
             margin-top: 20px;
             display: inline-block;
+            width: 80%;
+            max-width: 300px;
+        }
+        .btn-secondary {
+            background-color: #333;
+            margin-top: 15px;
+            font-size: 16px;
         }
         p { font-size: 14px; color: #aaa; margin-top: 10px; }
+        .debug-url { font-size: 10px; color: #555; margin-top: 30px; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -36,48 +45,85 @@
     <h2>Sinoflix</h2>
     <div id="status">Film tarayıcıda açılıyor...</div>
     
-    <a id="redirect-btn" href="#" class="btn">İzle / Watch</a>
-    <p>Otomatik açılmazsa butona tıklayın.</p>
+    <a id="chrome-btn" href="#" class="btn">Chrome ile Aç</a>
+
+    <a id="generic-btn" href="#" class="btn btn-secondary" style="display:none;">Diğer Tarayıcılar</a>
+
+    <p>Butonlara basmanıza rağmen açılmıyorsa linki kopyalayıp tarayıcınıza yapıştırın.</p>
+    
+    <div id="debug-area" class="debug-url">Link yükleniyor...</div>
 
     <script>
-        // 1. URL Parametrelerini al
-        const urlParams = new URLSearchParams(window.location.search);
-        let targetUrl = urlParams.get('v');
+        try {
+            // URL Parametrelerini al
+            const urlParams = new URLSearchParams(window.location.search);
+            let targetUrl = urlParams.get('v');
 
-        // Linkteki kopan parça (hash) varsa geri birleştir
-        if (targetUrl && window.location.hash) {
-            targetUrl += window.location.hash;
-        }
-
-        if (!targetUrl) {
-            document.getElementById('status').innerText = "Hata: Link bulunamadı.";
-            document.getElementById('redirect-btn').style.display = 'none';
-        } else {
-            
-            var userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            var isAndroid = /android/i.test(userAgent);
-
-            // --- ANDROID İÇİN "GOOGLECHROME" PROTOKOLÜ ---
-            if (isAndroid) {
-                // https:// kısmını 'googlechrome://' ile değiştiriyoruz.
-                // Bu yöntem '#' işaretini bozmaz, direkt taşır.
-                var androidUrl = targetUrl.replace(/^https?:\/\//, 'googlechrome://');
-                
-                // Butona da Android linkini verelim
-                document.getElementById('redirect-btn').href = androidUrl;
-                
-                // Yönlendir
-                window.location.href = androidUrl;
+            // Hash (Kare işareti) kopukluğunu tamir et
+            if (targetUrl && window.location.hash) {
+                targetUrl += window.location.hash;
             }
-            
-            // --- IOS (iPhone) ve DİĞERLERİ ---
-            else {
-                // Butona normal linki ver
-                document.getElementById('redirect-btn').href = targetUrl;
+
+            // Hata Kontrolü
+            if (!targetUrl) {
+                document.getElementById('status').innerText = "Hata: Link bulunamadı.";
+                document.getElementById('debug-area').innerText = "URL Parametresi (?v=) boş.";
+                document.getElementById('chrome-btn').style.display = 'none';
+            } else {
+                // Debug alanına linki yaz (Sorun olursa ekran görüntüsünde görelim)
+                document.getElementById('debug-area').innerText = "Hedef: " + targetUrl;
+
+                var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                var isAndroid = /android/i.test(userAgent);
+                var isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+
+                // --- ANDROID İŞLEMLERİ ---
+                if (isAndroid) {
+                    // 1. Chrome Linki (googlechrome://)
+                    // Hash işaretini bozmamak için olduğu gibi bırakıyoruz, googlechrome şeması genelde bunu çözer.
+                    var chromeUrl = targetUrl.replace(/^https?:\/\//, 'googlechrome://');
+                    
+                    // 2. Genel Intent Linki (Yedek)
+                    // "https://" kısmını atıp saf domaini alıyoruz
+                    var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
+                    // Intent formatı: Linki ver, şeması https olsun, ama kullanıcı tarayıcı seçsin (package belirtmiyoruz)
+                    var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;action=android.intent.action.VIEW;end;";
+
+                    // Butonları Ayarla
+                    var btn1 = document.getElementById('chrome-btn');
+                    var btn2 = document.getElementById('generic-btn');
+
+                    btn1.href = chromeUrl;
+                    btn1.innerText = "Chrome İle İzle (Önerilen)";
+                    
+                    btn2.href = intentUrl;
+                    btn2.style.display = "inline-block"; // Gizli butonu aç
+                    btn2.innerText = "Diğer Tarayıcı / Açılmıyorsa Tıkla";
+
+                    // Otomatik Yönlendirme (Önce Chrome dener)
+                    setTimeout(function() {
+                        window.location.href = chromeUrl;
+                    }, 500);
+                }
                 
-                // Normal Yönlendirme
-                window.location.href = targetUrl;
+                // --- IOS İŞLEMLERİ ---
+                else if (isIOS) {
+                    document.getElementById('chrome-btn').href = targetUrl;
+                    document.getElementById('chrome-btn').innerText = "İzle / Watch";
+                    // iOS'ta bazen otomatik gitmez, kullanıcı butona basar.
+                    window.location.href = targetUrl;
+                }
+                
+                // --- MASAÜSTÜ / DİĞER ---
+                else {
+                    document.getElementById('chrome-btn').href = targetUrl;
+                    window.location.href = targetUrl;
+                }
             }
+        } catch (e) {
+            // JavaScript çökerse hatayı ekrana bas
+            document.getElementById('status').innerText = "Bir hata oluştu.";
+            document.getElementById('debug-area').innerText = "JS Hatası: " + e.message;
         }
     </script>
 </body>
