@@ -18,7 +18,7 @@
             text-align: center;
         }
         .btn {
-            background-color: #e50914; /* Netflix kırmızısı gibi */
+            background-color: #e50914;
             color: white;
             padding: 15px 30px;
             text-decoration: none;
@@ -40,38 +40,40 @@
     <p>Otomatik açılmazsa butona tıklayın.</p>
 
     <script>
-        // 1. URL'in sonundaki "?v=" parametresini alıyoruz
+        // --- DÜZELTME BURADA YAPILDI ---
+        // URL'den 'v' parametresini al
         const urlParams = new URLSearchParams(window.location.search);
-        const targetUrl = urlParams.get('v');
+        let targetUrl = urlParams.get('v');
+
+        // Eğer linkte '#' işareti varsa, tarayıcı bunu parametreden ayırır.
+        // Biz bunu tekrar elle birleştiriyoruz.
+        if (targetUrl && window.location.hash) {
+            targetUrl += window.location.hash;
+        }
+        // --------------------------------
 
         if (!targetUrl) {
             document.getElementById('status').innerText = "Hata: Link bulunamadı.";
             document.getElementById('redirect-btn').style.display = 'none';
         } else {
-            // Butonun linkini ayarla
+            // Butona tam linki ver
             document.getElementById('redirect-btn').href = targetUrl;
 
-            // KULLANICI CİHAZINI ALGILA
             var userAgent = navigator.userAgent || navigator.vendor || window.opera;
             
-            // --- ANDROID İÇİN (Intent ile Chrome'u zorla) ---
+            // --- ANDROID (Intent Düzeltmesi) ---
             if (/android/i.test(userAgent)) {
                 // https:// kısmını temizle
                 var cleanUrl = targetUrl.replace(/^https?:\/\//, '');
-                // Chrome Intent Linki
+                
+                // Intent oluştururken linkin tamamını veriyoruz
                 var intentUrl = "intent://" + cleanUrl + "#Intent;scheme=https;package=com.android.chrome;end";
                 
-                // Önce intent dene, olmazsa normal link
+                // Yönlendir
                 window.location.href = intentUrl;
             }
             
-            // --- IOS (iPhone) İÇİN ---
-            else if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-                // iOS'ta otomatik yönlendirme zordur, direkt adrese gitmeyi deneriz
-                window.location.href = targetUrl;
-            }
-            
-            // --- MASAÜSTÜ / DİĞER ---
+            // --- IOS ve Diğerleri ---
             else {
                 window.location.href = targetUrl;
             }
